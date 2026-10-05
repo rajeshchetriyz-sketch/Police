@@ -1,0 +1,1135 @@
+<!<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Task Management Portal</title>
+  <style>
+    :root {
+      --primary: #2563eb;
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --text: #1e293b;
+      --border: #e2e8f0;
+      --success: #16a34a;
+      --danger: #dc2626;
+    }
+    * { 
+      box-sizing: border-box; 
+      margin: 0; 
+      padding: 0; 
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+    body { background-color: var(--bg); color: var(--text); padding: 15px; }
+    .container { max-width: 600px; margin: 0 auto; }
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 16px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+    h2, h3 { margin-bottom: 12px; }
+    .form-group { margin-bottom: 12px; }
+    label { display: block; font-size: 14px; font-weight: 600; margin-bottom: 6px; }
+    input, select, button { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); font-size: 15px; }
+    button { background: var(--primary); color: white; border: none; font-weight: 600; cursor: pointer; margin-top: 8px; touch-action: manipulation; }
+    button:active { opacity: 0.85; transform: scale(0.98); }
+    button.logout { background: #64748b; margin-top: 10px; }
+    button.reset-btn { background: #ef4444; margin-top: 15px; font-size: 13px; padding: 10px; }
+    
+    .tasks-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      gap: 10px;
+    }
+    .tasks-header h3 { margin-bottom: 0; }
+    
+    .btn-delete-all {
+      background: #dc2626 !important;
+      color: #ffffff !important;
+      border: none !important;
+      padding: 10px 14px !important;
+      border-radius: 6px !important;
+      font-size: 13px !important;
+      font-weight: bold !important;
+      width: auto !important;
+      margin-top: 0 !important;
+      cursor: pointer !important;
+      display: inline-block !important;
+      z-index: 10;
+    }
+    
+    .btn-delete { 
+      background: #fee2e2 !important; 
+      color: #b91c1c !important; 
+      border: 1px solid #f87171 !important; 
+      padding: 8px 12px !important; 
+      border-radius: 6px !important; 
+      font-size: 12px !important; 
+      font-weight: 600 !important;
+      width: auto !important; 
+      margin-top: 6px !important; 
+      cursor: pointer !important;
+      display: inline-block !important;
+      z-index: 10;
+    }
+
+    .hidden { display: none !important; }
+    .task-item { border: 1px solid var(--border); border-radius: 8px; padding: 12px; margin-bottom: 10px; display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+    .task-item.completed { background: #f0fdf4; border-color: #bbf7d0; }
+    .task-item.completed .task-text { text-decoration: line-through; color: #64748b; }
+    .task-meta { font-size: 13px; color: #64748b; margin-top: 4px; }
+    .checkbox-wrap { display: flex; align-items: flex-start; gap: 12px; flex: 1; cursor: pointer; }
+    .checkbox-wrap input[type="checkbox"] { width: 22px; height: 22px; cursor: pointer; margin-top: 2px; }
+    .badge { display: inline-block; padding: 4px 10px; border-radius: 6px; font-size: 13px; background: #e2e8f0; font-weight: bold; margin-bottom: 10px; }
+    .alert-box { padding: 10px; border-radius: 6px; font-size: 13px; margin-bottom: 12px; display: none; }
+    .alert-error { background: #fee2e2; color: #b91c1c; border: 1px solid #f87171; }
+    .alert-success { background: #dcfce7; color: #15803d; border: 1px solid #86efac; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- 1. LOGIN SCREEN -->
+  <div id="loginSection" class="card">
+    <h2>Sign In</h2>
+    <div id="loginError" class="alert-box alert-error"></div>
+    
+    <div class="form-group">
+      <label for="loginId">User ID</label>
+      <input type="text" id="loginId" placeholder="e.g. admin or user1" autocomplete="off" autocapitalize="none">
+    </div>
+    <div class="form-group">
+      <label for="loginPassword">Password</label>
+      <input type="password" id="loginPassword" placeholder="Enter password">
+    </div>
+    <button type="button" id="btnLogin">Login</button>
+
+    <div style="font-size: 13px; color: #475569; margin-top: 16px; line-height: 1.5; background: #f1f5f9; padding: 10px; border-radius: 8px;">
+      <b>Default Logins:</b><br>
+      • Admin: <code>admin</code> / <code>admin123</code><br>
+      • Users: <code>user1</code> to <code>user12</code><br>
+      • Password: <code>pass123</code>
+    </div>
+
+    <button type="button" class="reset-btn" id="btnResetAll">Reset & Fix All Data</button>
+  </div>
+
+  <!-- 2. ADMIN DASHBOARD -->
+  <div id="adminDashboard" class="card hidden">
+    <h2>Admin Dashboard</h2>
+    <p class="badge">Logged in as: Admin</p>
+    <button type="button" class="logout" id="btnAdminLogout">Log Out</button>
+
+    <!-- Assign Task -->
+    <div style="margin-top: 20px;">
+      <h3>Assign Task to User</h3>
+      <div id="taskMsg" class="alert-box"></div>
+      
+      <div class="form-group">
+        <label>Select User</label>
+        <select id="taskAssignee"></select>
+      </div>
+      <div class="form-group">
+        <label>Task Description *</label>
+        <input type="text" id="taskTitle" placeholder="e.g. Submit project files">
+      </div>
+      <div class="form-group">
+        <label>Deadline (Optional)</label>
+        <input type="datetime-local" id="taskDeadline">
+      </div>
+      <button type="button" id="btnAssignTask" style="background:#16a34a; font-size:16px; padding:14px;">➕ Add / Assign Task</button>
+    </div>
+
+    <!-- All Tasks Overview -->
+    <div style="margin-top: 25px;">
+      <div class="tasks-header">
+        <h3>Assigned Tasks Overview</h3>
+        <button type="button" id="btnDeleteAllTasks" class="btn-delete-all" onclick="deleteAllTasks()">🗑 Delete All</button>
+      </div>
+      <div id="allTasksList">No tasks assigned yet.</div>
+    </div>
+
+    <!-- Admin Credentials -->
+    <div style="margin-top: 25px; border-top: 1px solid var(--border); padding-top: 15px;">
+      <h3>Change Admin Credentials</h3>
+      <div class="form-group">
+        <label>New Admin ID</label>
+        <input type="text" id="newAdminId" placeholder="New Admin ID">
+      </div>
+      <div class="form-group">
+        <label>New Admin Password</label>
+        <input type="password" id="newAdminPass" placeholder="New Password">
+      </div>
+      <button type="button" id="btnSaveAdmin">Save Admin Credentials</button>
+    </div>
+  </div>
+
+  <!-- 3. USER DASHBOARD -->
+  <div id="userDashboard" class="card hidden">
+    <h2>User Dashboard</h2>
+    <h3>Welcome, <span id="displayUserName" style="color: var(--primary);"></span></h3>
+    <span class="badge" id="displayUserId"></span>
+    <button type="button" class="logout" id="btnUserLogout">Log Out</button>
+
+    <!-- User Task List -->
+    <div style="margin-top: 20px;">
+      <h3>My Tasks</h3>
+      <div id="userTaskList">No tasks assigned to you right now.</div>
+    </div>
+
+    <!-- User Profile Settings -->
+    <div style="margin-top: 25px; border-top: 1px solid var(--border); padding-top: 15px;">
+      <h3>Account Settings</h3>
+      <div class="form-group">
+        <label>Change Name</label>
+        <input type="text" id="newUserName" placeholder="Enter your full name">
+      </div>
+      <div class="form-group">
+        <label>Change User ID (Login ID)</label>
+        <input type="text" id="newUserIdInput" placeholder="Enter new user ID">
+      </div>
+      <div class="form-group">
+        <label>Change Password</label>
+        <input type="password" id="newUserPass" placeholder="Enter new password">
+      </div>
+      <button type="button" id="btnSaveProfile">Save Profile Changes</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  function getStorage(key, fallback) {
+    try {
+      var item = localStorage.getItem(key);
+      return item ? JSON.parse(item) : fallback;
+    } catch(e) {
+      return fallback;
+    }
+  }
+
+  function setStorage(key, val) {
+    localStorage.setItem(key, JSON.stringify(val));
+  }
+
+  function generateDefaultUsers() {
+    var list = [];
+    for (var i = 1; i <= 12; i++) {
+      list.push({
+        id: "user" + i,
+        name: "User " + i,
+        password: "pass123"
+      });
+    }
+    return list;
+  }
+
+  var admin = getStorage("app_admin", { id: "admin", password: "admin123" });
+  var rawUsers = getStorage("app_users", null);
+
+  var users = [];
+  if (Array.isArray(rawUsers) && rawUsers.length > 0) {
+    users = rawUsers.map(function(u, idx) {
+      var safeId = (u && u.id) ? String(u.id) : ("user" + (idx + 1));
+      var safeName = (u && u.name && String(u.name).trim() !== "") ? String(u.name) : ("User " + (idx + 1));
+      var safePass = (u && u.password) ? String(u.password) : "pass123";
+      return { id: safeId, name: safeName, password: safePass };
+    });
+  } else {
+    users = generateDefaultUsers();
+  }
+  setStorage("app_users", users);
+
+  var tasks = getStorage("app_tasks", []);
+  var activeUser = null;
+
+  function showLoginError(msg) {
+    var box = document.getElementById("loginError");
+    box.innerText = msg;
+    box.style.display = "block";
+  }
+
+  function clearLoginError() {
+    var box = document.getElementById("loginError");
+    box.innerText = "";
+    box.style.display = "none";
+  }
+
+  function showTaskMessage(msg, isError) {
+    var box = document.getElementById("taskMsg");
+    if (!box) return;
+    box.innerText = msg;
+    box.className = isError ? "alert-box alert-error" : "alert-box alert-success";
+    box.style.display = "block";
+    setTimeout(function() {
+      box.style.display = "none";
+    }, 3000);
+  }
+
+  function handleLogin() {
+    clearLoginError();
+    var inputId = (document.getElementById("loginId").value || "").trim().toLowerCase();
+    var inputPass = (document.getElementById("loginPassword").value || "").trim();
+
+    if (!inputId || !inputPass) {
+      showLoginError("Please enter User ID and Password.");
+      return;
+    }
+
+    admin = getStorage("app_admin", { id: "admin", password: "admin123" });
+    users = getStorage("app_users", generateDefaultUsers());
+
+    if (inputId === admin.id.toLowerCase() && inputPass === admin.password) {
+      activeUser = { role: "admin", id: admin.id, name: "Admin" };
+      openAdminView();
+      return;
+    }
+
+    for (var i = 0; i < users.length; i++) {
+      var u = users[i];
+      if (u.id.toLowerCase() === inputId && u.password === inputPass) {
+        activeUser = { role: "user", id: u.id, name: u.name, password: u.password };
+        openUserView();
+        return;
+      }
+    }
+
+    showLoginError("Invalid credentials! Try 'user1' and 'pass123'.");
+  }
+
+  function handleLogout() {
+    activeUser = null;
+    document.getElementById("loginId").value = "";
+    document.getElementById("loginPassword").value = "";
+    clearLoginError();
+    document.getElementById("loginSection").classList.remove("hidden");
+    document.getElementById("adminDashboard").classList.add("hidden");
+    document.getElementById("userDashboard").classList.add("hidden");
+  }
+
+  function openAdminView() {
+    document.getElementById("loginSection").classList.add("hidden");
+    document.getElementById("userDashboard").classList.add("hidden");
+    document.getElementById("adminDashboard").classList.remove("hidden");
+
+    populateUserDropdown();
+    renderAllTasks();
+  }
+
+  function populateUserDropdown() {
+    users = getStorage("app_users", generateDefaultUsers());
+    var select = document.getElementById("taskAssignee");
+    var html = "";
+    for (var i = 0; i < users.length; i++) {
+      var u = users[i];
+      var nameToShow = (u.name && u.name.trim() !== "") ? u.name : u.id;
+      html += '<option value="' + u.id + '">' + nameToShow + ' (' + u.id + ')</option>';
+    }
+    select.innerHTML = html;
+  }
+
+  function createTask() {
+    var selectEl = document.getElementById("taskAssignee");
+    var assigneeId = selectEl ? selectEl.value : "";
+    var titleEl = document.getElementById("taskTitle");
+    var title = titleEl ? titleEl.value.trim() : "";
+    var deadlineEl = document.getElementById("taskDeadline");
+    var deadline = deadlineEl ? deadlineEl.value : "";
+
+    if (!title) {
+      showTaskMessage("Please enter a Task Description first!", true);
+      if (titleEl) titleEl.focus();
+      return;
+    }
+
+    if (!deadline) {
+      var now = new Date();
+      now.setDate(now.getDate() + 1);
+      deadline = now.toISOString();
+    }
+
+    tasks = getStorage("app_tasks", []);
+    var newTask = {
+      id: Date.now(),
+      assigneeId: assigneeId,
+      title: title,
+      deadline: deadline,
+      completed: false
+    };
+
+    tasks.push(newTask);
+    setStorage("app_tasks", tasks);
+
+    titleEl.value = "";
+    if (deadlineEl) deadlineEl.value = "";
+
+    renderAllTasks();
+    showTaskMessage("Task assigned successfully!", false);
+  }
+
+  function renderAllTasks() {
+    tasks = getStorage("app_tasks", []);
+    users = getStorage("app_users", generateDefaultUsers());
+    var list = document.getElementById("allTasksList");
+    var btnDeleteAll = document.getElementById("btnDeleteAllTasks");
+
+    if (!tasks || tasks.length === 0) {
+      list.innerHTML = "<p style='color:#64748b; font-size:14px; padding:10px 0;'>No tasks assigned yet.</p>";
+      if (btnDeleteAll) btnDeleteAll.style.display = "none";
+      return;
+    }
+
+    if (btnDeleteAll) btnDeleteAll.style.display = "inline-block";
+
+    var html = "";
+    for (var i = tasks.length - 1; i >= 0; i--) {
+      var t = tasks[i];
+      var found = null;
+      for (var j = 0; j < users.length; j++) {
+        if (users[j].id.toLowerCase() === t.assigneeId.toLowerCase()) {
+          found = users[j];
+          break;
+        }
+      }
+
+      var displayName = found ? found.name : t.assigneeId;
+      var isOverdue = (new Date(t.deadline) < new Date()) && !t.completed;
+      var statusBadge = t.completed 
+        ? '<span style="color:var(--success); font-weight:bold;">✅ Done</span>' 
+        : '<span style="color:#d97706; font-weight:bold;">⏳ Pending</span>';
+      var overdueHtml = isOverdue ? ' <span style="color:var(--danger); font-weight:bold;">[OVERDUE]</span>' : "";
+
+      html += '<div class="task-item ' + (t.completed ? 'completed' : '') + '">' +
+                '<div class="task-text">' +
+                  '<b>' + t.title + '</b>' +
+                  '<div class="task-meta">' +
+                    'Assigned to: <b>' + displayName + '</b> (' + t.assigneeId + ')<br>' +
+                    'Due: ' + new Date(t.deadline).toLocaleString() + overdueHtml +
+                  '</div>' +
+                '</div>' +
+                '<div style="text-align:right; min-width:80px;">' +
+                  '<div>' + statusBadge + '</div>' +
+                  '<button type="button" class="btn-delete" onclick="deleteTask(' + t.id + ')">🗑 Delete</button>' +
+                '</div>' +
+              '</div>';
+    }
+    list.innerHTML = html;
+  }
+
+  // 100% WORKING DIRECT DELETE (No Browser Confirm Block)
+  window.deleteTask = function(taskId) {
+    tasks = getStorage("app_tasks", []);
+    tasks = tasks.filter(function(t) {
+      return String(t.id) !== String(taskId);
+    });
+    setStorage("app_tasks", tasks);
+    renderAllTasks();
+    showTaskMessage("Task deleted successfully!", false);
+  };
+
+  // 100% WORKING DIRECT DELETE ALL
+  window.deleteAllTasks = function() {
+    tasks = getStorage("app_tasks", []);
+    if (!tasks || tasks.length === 0) {
+      showTaskMessage("No tasks available to delete.", true);
+      return;
+    }
+    tasks = [];
+    setStorage("app_tasks", tasks);
+    renderAllTasks();
+    showTaskMessage("All tasks deleted successfully!", false);
+  };
+
+  function updateAdminCredentials() {
+    var newId = document.getElementById("newAdminId").value.trim();
+    var newPass = document.getElementById("newAdminPass").value.trim();
+
+    if (!newId && !newPass) {
+      alert("Please enter a new Admin ID or Password.");
+      return;
+    }
+
+    if (newId) admin.id = newId;
+    if (newPass) admin.password = newPass;
+
+    setStorage("app_admin", admin);
+    document.getElementById("newAdminId").value = "";
+    document.getElementById("newAdminPass").value = "";
+    showTaskMessage("Admin details saved!", false);
+  }
+
+  // USER SECTION
+  function openUserView() {
+    document.getElementById("loginSection").classList.add("hidden");
+    document.getElementById("adminDashboard").classList.add("hidden");
+    document.getElementById("userDashboard").classList.remove("hidden");
+
+    var safeName = (activeUser.name && activeUser.name.trim() !== "") ? activeUser.name : activeUser.id;
+    document.getElementById("displayUserName").innerText = safeName;
+    document.getElementById("displayUserId").innerText = "ID: " + activeUser.id;
+    document.getElementById("newUserName").value = safeName;
+    document.getElementById("newUserIdInput").value = activeUser.id;
+    document.getElementById("newUserPass").value = "";
+
+    renderUserTasks();
+  }
+
+  function renderUserTasks() {
+    tasks = getStorage("app_tasks", []);
+    var list = document.getElementById("userTaskList");
+    var myTasks = [];
+
+    for (var i = 0; i < tasks.length; i++) {
+      if (tasks[i].assigneeId.toLowerCase() === activeUser.id.toLowerCase()) {
+        myTasks.push(tasks[i]);
+      }
+    }
+
+    if (myTasks.length === 0) {
+      list.innerHTML = "<p style='color:#64748b; font-size:14px; padding:10px 0;'>No tasks assigned to you right now.</p>";
+      return;
+    }
+
+    var html = "";
+    for (var k = myTasks.length - 1; k >= 0; k--) {
+      var t = myTasks[k];
+      var isOverdue = (new Date(t.deadline) < new Date()) && !t.completed;
+      var overdueHtml = isOverdue ? ' <span style="color:var(--danger); font-weight:bold;">(Deadline Passed!)</span>' : "";
+      var checkedAttr = t.completed ? "checked" : "";
+
+      html += '<div class="task-item ' + (t.completed ? 'completed' : '') + '">' +
+                '<label class="checkbox-wrap">' +
+                  '<input type="checkbox" ' + checkedAttr + ' onchange="toggleTaskStatus(' + t.id + ')">' +
+                  '<div class="task-text">' +
+                    '<div style="font-weight:600; font-size:15px;">' + t.title + '</div>' +
+                    '<div class="task-meta">Due: ' + new Date(t.deadline).toLocaleString() + overdueHtml + '</div>' +
+                  '</div>' +
+                '</label>' +
+              '</div>';
+    }
+    list.innerHTML = html;
+  }
+
+  window.toggleTaskStatus = function(taskId) {
+    tasks = getStorage("app_tasks", []);
+    for (var i = 0; i < tasks.length; i++) {
+      if (String(tasks[i].id) === String(taskId)) {
+        tasks[i].completed = !tasks[i].completed;
+        break;
+      }
+    }
+    setStorage("app_tasks", tasks);
+    renderUserTasks();
+  };
+
+  function updateUserProfile() {
+    var newName = document.getElementById("newUserName").value.trim();
+    var newId = document.getElementById("newUserIdInput").value.trim();
+    var newPass = document.getElementById("newUserPass").value.trim();
+
+    if (!newName && !newId && !newPass) {
+      alert("No changes entered.");
+      return;
+    }
+
+    users = getStorage("app_users", generateDefaultUsers());
+    tasks = getStorage("app_tasks", []);
+
+    if (newId && newId.toLowerCase() !== activeUser.id.toLowerCase()) {
+      for (var i = 0; i < users.length; i++) {
+        if (users[i].id.toLowerCase() === newId.toLowerCase() || newId.toLowerCase() === admin.id.toLowerCase()) {
+          alert("This User ID is already taken. Choose another.");
+          return;
+        }
+      }
+    }
+
+    var oldId = activeUser.id;
+
+    for (var j = 0; j < users.length; j++) {
+      if (users[j].id.toLowerCase() === oldId.toLowerCase()) {
+        if (newName) users[j].name = newName;
+        if (newId) users[j].id = newId;
+        if (newPass) users[j].password = newPass;
+
+        activeUser.name = users[j].name;
+        activeUser.id = users[j].id;
+        break;
+      }
+    }
+
+    if (newId && newId.toLowerCase() !== oldId.toLowerCase()) {
+      for (var k = 0; k < tasks.length; k++) {
+        if (tasks[k].assigneeId.toLowerCase() === oldId.toLowerCase()) {
+          tasks[k].assigneeId = newId;
+        }
+      }
+      setStorage("app_tasks", tasks);
+    }
+
+    setStorage("app_users", users);
+    document.getElementById("displayUserName").innerText = activeUser.name;
+    document.getElementById("displayUserId").innerText = "ID: " + activeUser.id;
+    document.getElementById("newUserPass").value = "";
+    alert("Profile saved successfully!");
+    renderUserTasks();
+  }
+
+  function forceFixData() {
+    localStorage.removeItem("app_users");
+    localStorage.removeItem("app_tasks");
+    localStorage.removeItem("app_admin");
+    alert("Data reset successfully! Default User 1 to 12 are restored.");
+    location.reload();
+  }
+
+  window.addEventListener("DOMContentLoaded", function() {
+    document.getElementById("btnLogin").onclick = handleLogin;
+    document.getElementById("btnAssignTask").onclick = createTask;
+    document.getElementById("btnAdminLogout").onclick = handleLogout;
+    document.getElementById("btnUserLogout").onclick = handleLogout;
+    document.getElementById("btnSaveAdmin").onclick = updateAdminCredentials;
+    document.getElementById("btnSaveProfile").onclick = updateUserProfile;
+    document.getElementById("btnResetAll").onclick = forceFixData;
+  });
+</script>
+
+</body>
+</html>
+ html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Task Management Portal</title>
+  <style>
+    :root {
+      --primary: #2563eb;
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --text: #1e293b;
+      --border: #e2e8f0;
+      --success: #16a34a;
+      --danger: #dc2626;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background-color: var(--bg); color: var(--text); padding: 15px; }
+    .container { max-width: 600px; margin: 0 auto; }
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 16px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+    h2, h3 { margin-bottom: 12px; }
+    .form-group { margin-bottom: 12px; }
+    label { display: block; font-size: 14px; font-weight: 600; margin-bottom: 6px; }
+    input, select, button { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); font-size: 15px; }
+    button { background: var(--primary); color: white; border: none; font-weight: 600; cursor: pointer; margin-top: 8px; -webkit-tap-highlight-color: transparent; }
+    button:active { opacity: 0.85; transform: scale(0.99); }
+    button.logout { background: #64748b; margin-top: 10px; }
+    button.reset-btn { background: #ef4444; margin-top: 15px; font-size: 13px; padding: 10px; }
+    .btn-delete { background: #fee2e2; color: #b91c1c; border: 1px solid #f87171; padding: 6px 10px; border-radius: 6px; font-size: 12px; width: auto; margin-top: 6px; }
+    .hidden { display: none !important; }
+    .task-item { border: 1px solid var(--border); border-radius: 8px; padding: 12px; margin-bottom: 10px; display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+    .task-item.completed { background: #f0fdf4; border-color: #bbf7d0; }
+    .task-item.completed .task-text { text-decoration: line-through; color: #64748b; }
+    .task-meta { font-size: 13px; color: #64748b; margin-top: 4px; }
+    .checkbox-wrap { display: flex; align-items: flex-start; gap: 12px; flex: 1; cursor: pointer; }
+    .checkbox-wrap input[type="checkbox"] { width: 22px; height: 22px; cursor: pointer; margin-top: 2px; }
+    .badge { display: inline-block; padding: 4px 10px; border-radius: 6px; font-size: 13px; background: #e2e8f0; font-weight: bold; margin-bottom: 10px; }
+    .alert-box { padding: 10px; border-radius: 6px; font-size: 13px; margin-bottom: 12px; display: none; }
+    .alert-error { background: #fee2e2; color: #b91c1c; border: 1px solid #f87171; }
+    .alert-success { background: #dcfce7; color: #15803d; border: 1px solid #86efac; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- 1. LOGIN SCREEN -->
+  <div id="loginSection" class="card">
+    <h2>Sign In</h2>
+    <div id="loginError" class="alert-box alert-error"></div>
+    
+    <div class="form-group">
+      <label for="loginId">User ID</label>
+      <input type="text" id="loginId" placeholder="e.g. admin or user1" autocomplete="off" autocapitalize="none">
+    </div>
+    <div class="form-group">
+      <label for="loginPassword">Password</label>
+      <input type="password" id="loginPassword" placeholder="Enter password">
+    </div>
+    <button type="button" id="btnLogin">Login</button>
+
+    <div style="font-size: 13px; color: #475569; margin-top: 16px; line-height: 1.5; background: #f1f5f9; padding: 10px; border-radius: 8px;">
+      <b>Default Logins:</b><br>
+      • Admin: <code>admin</code> / <code>admin123</code><br>
+      • Users: <code>user1</code> to <code>user12</code><br>
+      • Password: <code>pass123</code>
+    </div>
+
+    <button type="button" class="reset-btn" id="btnResetAll">Reset & Fix All Data</button>
+  </div>
+
+  <!-- 2. ADMIN DASHBOARD -->
+  <div id="adminDashboard" class="card hidden">
+    <h2>Admin Dashboard</h2>
+    <p class="badge">Logged in as: Admin</p>
+    <button type="button" class="logout" id="btnAdminLogout">Log Out</button>
+
+    <!-- Assign Task -->
+    <div style="margin-top: 20px;">
+      <h3>Assign Task to User</h3>
+      <div id="taskMsg" class="alert-box"></div>
+      
+      <div class="form-group">
+        <label>Select User</label>
+        <select id="taskAssignee"></select>
+      </div>
+      <div class="form-group">
+        <label>Task Description *</label>
+        <input type="text" id="taskTitle" placeholder="e.g. Submit project files">
+      </div>
+      <div class="form-group">
+        <label>Deadline (Optional)</label>
+        <input type="datetime-local" id="taskDeadline">
+      </div>
+      <button type="button" id="btnAssignTask" style="background:#16a34a; font-size:16px; padding:14px;">➕ Add / Assign Task</button>
+    </div>
+
+    <!-- All Tasks -->
+    <div style="margin-top: 25px;">
+      <h3>Assigned Tasks Overview</h3>
+      <div id="allTasksList">No tasks assigned yet.</div>
+    </div>
+
+    <!-- Admin Credentials -->
+    <div style="margin-top: 25px; border-top: 1px solid var(--border); padding-top: 15px;">
+      <h3>Change Admin Credentials</h3>
+      <div class="form-group">
+        <label>New Admin ID</label>
+        <input type="text" id="newAdminId" placeholder="New Admin ID">
+      </div>
+      <div class="form-group">
+        <label>New Admin Password</label>
+        <input type="password" id="newAdminPass" placeholder="New Password">
+      </div>
+      <button type="button" id="btnSaveAdmin">Save Admin Credentials</button>
+    </div>
+  </div>
+
+  <!-- 3. USER DASHBOARD -->
+  <div id="userDashboard" class="card hidden">
+    <h2>User Dashboard</h2>
+    <h3>Welcome, <span id="displayUserName" style="color: var(--primary);"></span></h3>
+    <span class="badge" id="displayUserId"></span>
+    <button type="button" class="logout" id="btnUserLogout">Log Out</button>
+
+    <!-- User Task List -->
+    <div style="margin-top: 20px;">
+      <h3>My Tasks</h3>
+      <div id="userTaskList">No tasks assigned to you yet.</div>
+    </div>
+
+    <!-- User Profile Settings -->
+    <div style="margin-top: 25px; border-top: 1px solid var(--border); padding-top: 15px;">
+      <h3>Account Settings</h3>
+      <div class="form-group">
+        <label>Change Name</label>
+        <input type="text" id="newUserName" placeholder="Enter your full name">
+      </div>
+      <div class="form-group">
+        <label>Change User ID (Login ID)</label>
+        <input type="text" id="newUserIdInput" placeholder="Enter new user ID">
+      </div>
+      <div class="form-group">
+        <label>Change Password</label>
+        <input type="password" id="newUserPass" placeholder="Enter new password">
+      </div>
+      <button type="button" id="btnSaveProfile">Save Profile Changes</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  function getStorage(key, fallback) {
+    try {
+      var item = localStorage.getItem(key);
+      return item ? JSON.parse(item) : fallback;
+    } catch(e) {
+      return fallback;
+    }
+  }
+
+  function setStorage(key, val) {
+    localStorage.setItem(key, JSON.stringify(val));
+  }
+
+  function generateDefaultUsers() {
+    var list = [];
+    for (var i = 1; i <= 12; i++) {
+      list.push({
+        id: "user" + i,
+        name: "User " + i,
+        password: "pass123"
+      });
+    }
+    return list;
+  }
+
+  var admin = getStorage("app_admin", { id: "admin", password: "admin123" });
+  var rawUsers = getStorage("app_users", null);
+
+  var users = [];
+  if (Array.isArray(rawUsers) && rawUsers.length > 0) {
+    users = rawUsers.map(function(u, idx) {
+      var safeId = (u && u.id) ? String(u.id) : ("user" + (idx + 1));
+      var safeName = (u && u.name && String(u.name).trim() !== "") ? String(u.name) : ("User " + (idx + 1));
+      var safePass = (u && u.password) ? String(u.password) : "pass123";
+      return { id: safeId, name: safeName, password: safePass };
+    });
+  } else {
+    users = generateDefaultUsers();
+  }
+  setStorage("app_users", users);
+
+  var tasks = getStorage("app_tasks", []);
+  var activeUser = null;
+
+  function showLoginError(msg) {
+    var box = document.getElementById("loginError");
+    box.innerText = msg;
+    box.style.display = "block";
+  }
+
+  function clearLoginError() {
+    var box = document.getElementById("loginError");
+    box.innerText = "";
+    box.style.display = "none";
+  }
+
+  function showTaskMessage(msg, isError) {
+    var box = document.getElementById("taskMsg");
+    box.innerText = msg;
+    box.className = isError ? "alert-box alert-error" : "alert-box alert-success";
+    box.style.display = "block";
+    setTimeout(function() {
+      box.style.display = "none";
+    }, 3000);
+  }
+
+  function handleLogin() {
+    clearLoginError();
+    var inputId = (document.getElementById("loginId").value || "").trim().toLowerCase();
+    var inputPass = (document.getElementById("loginPassword").value || "").trim();
+
+    if (!inputId || !inputPass) {
+      showLoginError("Please enter User ID and Password.");
+      return;
+    }
+
+    admin = getStorage("app_admin", { id: "admin", password: "admin123" });
+    users = getStorage("app_users", generateDefaultUsers());
+
+    // 1. Admin login
+    if (inputId === admin.id.toLowerCase() && inputPass === admin.password) {
+      activeUser = { role: "admin", id: admin.id, name: "Admin" };
+      openAdminView();
+      return;
+    }
+
+    // 2. User login
+    for (var i = 0; i < users.length; i++) {
+      var u = users[i];
+      if (u.id.toLowerCase() === inputId && u.password === inputPass) {
+        activeUser = { role: "user", id: u.id, name: u.name, password: u.password };
+        openUserView();
+        return;
+      }
+    }
+
+    showLoginError("Invalid credentials! Try 'user1' and 'pass123'.");
+  }
+
+  function handleLogout() {
+    activeUser = null;
+    document.getElementById("loginId").value = "";
+    document.getElementById("loginPassword").value = "";
+    clearLoginError();
+    document.getElementById("loginSection").classList.remove("hidden");
+    document.getElementById("adminDashboard").classList.add("hidden");
+    document.getElementById("userDashboard").classList.add("hidden");
+  }
+
+  // ADMIN SECTION
+  function openAdminView() {
+    document.getElementById("loginSection").classList.add("hidden");
+    document.getElementById("userDashboard").classList.add("hidden");
+    document.getElementById("adminDashboard").classList.remove("hidden");
+
+    populateUserDropdown();
+    renderAllTasks();
+  }
+
+  function populateUserDropdown() {
+    users = getStorage("app_users", generateDefaultUsers());
+    var select = document.getElementById("taskAssignee");
+    var html = "";
+    for (var i = 0; i < users.length; i++) {
+      var u = users[i];
+      var nameToShow = (u.name && u.name.trim() !== "") ? u.name : u.id;
+      html += '<option value="' + u.id + '">' + nameToShow + ' (' + u.id + ')</option>';
+    }
+    select.innerHTML = html;
+  }
+
+  function createTask() {
+    var selectEl = document.getElementById("taskAssignee");
+    var assigneeId = selectEl ? selectEl.value : "";
+    var titleEl = document.getElementById("taskTitle");
+    var title = titleEl ? titleEl.value.trim() : "";
+    var deadlineEl = document.getElementById("taskDeadline");
+    var deadline = deadlineEl ? deadlineEl.value : "";
+
+    if (!title) {
+      showTaskMessage("Please enter a Task Description first!", true);
+      if (titleEl) titleEl.focus();
+      return;
+    }
+
+    // If deadline is blank, set default to +24 hours
+    if (!deadline) {
+      var now = new Date();
+      now.setDate(now.getDate() + 1);
+      deadline = now.toISOString();
+    }
+
+    tasks = getStorage("app_tasks", []);
+    var newTask = {
+      id: Date.now(),
+      assigneeId: assigneeId,
+      title: title,
+      deadline: deadline,
+      completed: false
+    };
+
+    tasks.push(newTask);
+    setStorage("app_tasks", tasks);
+
+    titleEl.value = "";
+    if (deadlineEl) deadlineEl.value = "";
+
+    renderAllTasks();
+    showTaskMessage("Task assigned successfully!", false);
+  }
+
+  function renderAllTasks() {
+    tasks = getStorage("app_tasks", []);
+    users = getStorage("app_users", generateDefaultUsers());
+    var list = document.getElementById("allTasksList");
+
+    if (tasks.length === 0) {
+      list.innerHTML = "<p style='color:#64748b; font-size:14px;'>No tasks created yet.</p>";
+      return;
+    }
+
+    var html = "";
+    for (var i = tasks.length - 1; i >= 0; i--) {
+      var t = tasks[i];
+      var found = null;
+      for (var j = 0; j < users.length; j++) {
+        if (users[j].id.toLowerCase() === t.assigneeId.toLowerCase()) {
+          found = users[j];
+          break;
+        }
+      }
+
+      var displayName = found ? found.name : t.assigneeId;
+      var isOverdue = (new Date(t.deadline) < new Date()) && !t.completed;
+      var statusBadge = t.completed 
+        ? '<span style="color:var(--success); font-weight:bold;">✅ Done</span>' 
+        : '<span style="color:#d97706; font-weight:bold;">⏳ Pending</span>';
+      var overdueHtml = isOverdue ? ' <span style="color:var(--danger); font-weight:bold;">[OVERDUE]</span>' : "";
+
+      html += '<div class="task-item ' + (t.completed ? 'completed' : '') + '">' +
+                '<div class="task-text">' +
+                  '<b>' + t.title + '</b>' +
+                  '<div class="task-meta">' +
+                    'Assigned to: <b>' + displayName + '</b> (' + t.assigneeId + ')<br>' +
+                    'Due: ' + new Date(t.deadline).toLocaleString() + overdueHtml +
+                  '</div>' +
+                '</div>' +
+                '<div style="text-align:right; min-width:80px;">' +
+                  '<div>' + statusBadge + '</div>' +
+                  '<button type="button" class="btn-delete" onclick="deleteTask(' + t.id + ')">🗑 Delete</button>' +
+                '</div>' +
+              '</div>';
+    }
+    list.innerHTML = html;
+  }
+
+  function deleteTask(taskId) {
+    if (confirm("Are you sure you want to delete this task?")) {
+      tasks = getStorage("app_tasks", []);
+      tasks = tasks.filter(function(t) {
+        return t.id !== taskId;
+      });
+      setStorage("app_tasks", tasks);
+      renderAllTasks();
+    }
+  }
+
+  function updateAdminCredentials() {
+    var newId = document.getElementById("newAdminId").value.trim();
+    var newPass = document.getElementById("newAdminPass").value.trim();
+
+    if (!newId && !newPass) {
+      alert("Please enter a new Admin ID or Password.");
+      return;
+    }
+
+    if (newId) admin.id = newId;
+    if (newPass) admin.password = newPass;
+
+    setStorage("app_admin", admin);
+    document.getElementById("newAdminId").value = "";
+    document.getElementById("newAdminPass").value = "";
+    alert("Admin details saved!");
+  }
+
+  // USER SECTION
+  function openUserView() {
+    document.getElementById("loginSection").classList.add("hidden");
+    document.getElementById("adminDashboard").classList.add("hidden");
+    document.getElementById("userDashboard").classList.remove("hidden");
+
+    var safeName = (activeUser.name && activeUser.name.trim() !== "") ? activeUser.name : activeUser.id;
+    document.getElementById("displayUserName").innerText = safeName;
+    document.getElementById("displayUserId").innerText = "ID: " + activeUser.id;
+    document.getElementById("newUserName").value = safeName;
+    document.getElementById("newUserIdInput").value = activeUser.id;
+    document.getElementById("newUserPass").value = "";
+
+    renderUserTasks();
+  }
+
+  function renderUserTasks() {
+    tasks = getStorage("app_tasks", []);
+    var list = document.getElementById("userTaskList");
+    var myTasks = [];
+
+    for (var i = 0; i < tasks.length; i++) {
+      if (tasks[i].assigneeId.toLowerCase() === activeUser.id.toLowerCase()) {
+        myTasks.push(tasks[i]);
+      }
+    }
+
+    if (myTasks.length === 0) {
+      list.innerHTML = "<p style='color:#64748b; font-size:14px;'>No tasks assigned to you right now.</p>";
+      return;
+    }
+
+    var html = "";
+    for (var k = myTasks.length - 1; k >= 0; k--) {
+      var t = myTasks[k];
+      var isOverdue = (new Date(t.deadline) < new Date()) && !t.completed;
+      var overdueHtml = isOverdue ? ' <span style="color:var(--danger); font-weight:bold;">(Deadline Passed!)</span>' : "";
+      var checkedAttr = t.completed ? "checked" : "";
+
+      html += '<div class="task-item ' + (t.completed ? 'completed' : '') + '">' +
+                '<label class="checkbox-wrap">' +
+                  '<input type="checkbox" ' + checkedAttr + ' onchange="toggleTaskStatus(' + t.id + ')">' +
+                  '<div class="task-text">' +
+                    '<div style="font-weight:600; font-size:15px;">' + t.title + '</div>' +
+                    '<div class="task-meta">Due: ' + new Date(t.deadline).toLocaleString() + overdueHtml + '</div>' +
+                  '</div>' +
+                '</label>' +
+              '</div>';
+    }
+    list.innerHTML = html;
+  }
+
+  function toggleTaskStatus(taskId) {
+    tasks = getStorage("app_tasks", []);
+    for (var i = 0; i < tasks.length; i++) {
+      if (tasks[i].id === taskId) {
+        tasks[i].completed = !tasks[i].completed;
+        break;
+      }
+    }
+    setStorage("app_tasks", tasks);
+    renderUserTasks();
+  }
+
+  function updateUserProfile() {
+    var newName = document.getElementById("newUserName").value.trim();
+    var newId = document.getElementById("newUserIdInput").value.trim();
+    var newPass = document.getElementById("newUserPass").value.trim();
+
+    if (!newName && !newId && !newPass) {
+      alert("No changes entered.");
+      return;
+    }
+
+    users = getStorage("app_users", generateDefaultUsers());
+    tasks = getStorage("app_tasks", []);
+
+    if (newId && newId.toLowerCase() !== activeUser.id.toLowerCase()) {
+      for (var i = 0; i < users.length; i++) {
+        if (users[i].id.toLowerCase() === newId.toLowerCase() || newId.toLowerCase() === admin.id.toLowerCase()) {
+          alert("This User ID is already taken. Choose another.");
+          return;
+        }
+      }
+    }
+
+    var oldId = activeUser.id;
+
+    for (var j = 0; j < users.length; j++) {
+      if (users[j].id.toLowerCase() === oldId.toLowerCase()) {
+        if (newName) users[j].name = newName;
+        if (newId) users[j].id = newId;
+        if (newPass) users[j].password = newPass;
+
+        activeUser.name = users[j].name;
+        activeUser.id = users[j].id;
+        break;
+      }
+    }
+
+    if (newId && newId.toLowerCase() !== oldId.toLowerCase()) {
+      for (var k = 0; k < tasks.length; k++) {
+        if (tasks[k].assigneeId.toLowerCase() === oldId.toLowerCase()) {
+          tasks[k].assigneeId = newId;
+        }
+      }
+      setStorage("app_tasks", tasks);
+    }
+
+    setStorage("app_users", users);
+    document.getElementById("displayUserName").innerText = activeUser.name;
+    document.getElementById("displayUserId").innerText = "ID: " + activeUser.id;
+    document.getElementById("newUserPass").value = "";
+    alert("Profile saved successfully!");
+    renderUserTasks();
+  }
+
+  function forceFixData() {
+    localStorage.removeItem("app_users");
+    localStorage.removeItem("app_tasks");
+    localStorage.removeItem("app_admin");
+    alert("Data reset successfully! Now default User 1 to 12 are restored.");
+    location.reload();
+  }
+
+  // ATTACH CLICK LISTENERS EXPLICITLY (Solves Mobile Touch Glitch)
+  window.addEventListener("DOMContentLoaded", function() {
+    document.getElementById("btnLogin").addEventListener("click", handleLogin);
+    document.getElementById("btnAssignTask").addEventListener("click", createTask);
+    document.getElementById("btnAdminLogout").addEventListener("click", handleLogout);
+    document.getElementById("btnUserLogout").addEventListener("click", handleLogout);
+    document.getElementById("btnSaveAdmin").addEventListener("click", updateAdminCredentials);
+    document.getElementById("btnSaveProfile").addEventListener("click", updateUserProfile);
+    document.getElementById("btnResetAll").addEventListener("click", forceFixData);
+  });
+</script>
+
+</body>
+</html>
